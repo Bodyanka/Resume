@@ -1,0 +1,210 @@
+import requests, time
+
+token = "386362589:AAHg7Cl6z8wzBvUhEMxbyFzhxGuGd1mxqTo"
+
+URL = "https://api.telegram.org/bot" + token + "/"
+
+last_update_id = 0
+
+ppl = {'Bogdan': **chat_id**, 'Test': **chat_id**}
+
+
+def send_message(chat_id, text):
+    url = URL + 'sendmessage?chat_id={}&text={}'.format(chat_id, text)
+    requests.get(url)
+
+
+def dgb(link, names):
+    checking = requests.get(link).json()
+    worker_info = []
+    answer = ''
+
+    for i in range(len(names)):
+        worker_info.append(checking['workers'][names[i]]['alive'])
+        if str(worker_info[i]) == '0':
+            if names[i] == 'timevault.m03':
+                answer += (str(names[i]) + ' ' + str(worker_info[i]) + ' Office\n')
+            elif names[i] == 'ProMine1.1':
+                answer += (str(names[i]) + ' ' + str(worker_info[i]) + ' М\n')
+            elif names[i] == 'fstminer.x01':
+                answer += (str(names[i]) + ' ' + str(worker_info[i]) + ' В\n')
+            else:
+                answer += (str(names[i]) + ' ' + str(worker_info[i]) + '\n')
+    send_message(ppl['Test'], answer)
+
+
+def ltc(link, names):
+    checking = requests.get(link).json()
+    twcon = []
+    answer = ''
+
+    for i in range(len(names)):
+        twcon.append(checking['workers'][names[i]]['connected'])
+        if twcon[i] != True:
+            answer += (str(names[i]) + ' ' + str(twcon[i]) + '\n')
+    send_message(ppl['Test'], answer)
+
+
+def eth1(link):
+    global check
+    check = requests.get(link).json()
+    answer = ''
+
+    for i in range(0, 8):
+
+
+        if check['data'][i]['currentHashrate'] == None:
+            answer += (check['data'][i]['worker'] + ': ' + str(check['data'][i]['currentHashrate']) + '\n')
+
+        elif int((check['data'][i]['currentHashrate'])/1000000) < 100:
+            if check['data'][i]['worker'] == 'eth09':
+                answer += (check['data'][i]['worker'] + ': ' + str(int((check['data'][i]['currentHashrate'])/1000000)) + ' из ~150\n')
+            else:
+                answer += (check['data'][i]['worker'] + ': ' + str(int((check['data'][i]['currentHashrate'])/1000000)) + ' из ~420\n')
+    send_message(ppl['Test'], answer)
+    
+    
+def s9(link, names):
+    checking = requests.get(link).json()
+    s9_names = []
+    answer = ''
+
+    for i in range(len(names)):
+        s9_names.append(checking['data']['rows'][i]['last10m'])
+        if float(s9_names[i]) < 8 * (10 ** 6):
+            answer += ('\n' + 'S9(' + names[i] + ') ' + str(round((float(checking['data']['rows'][i]['last10m']) / (10 ** 6)), 1)) + ' из ~14 Th/s')
+    send_message(ppl['Test'], answer)
+
+
+def baikal():
+    headers = {"Host": "xvg-mg.idcray.com",
+               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299",
+               "Accept": "text/html, application/xhtml+xml, image/jxr, */*",
+               "Accept-Language": "ru-UA",
+               "X-Requested-With": "XMLHttpRequest",
+               "DNT": "1",
+               "Cookie": "UM_distinctid=1634f08093f1af-0818a447c45246-7047503f-1fa400-1634f08094499d; __cfduid=d0cf69f257b860bc4f22b9e307a1fcbe81526039008; cf_clearance=73160438d3fd08178c49a9658c8ae029e02d33ec-1526236887-1800; CNZZDATA1255597291=2082930535-1526036487-%7C1526212091; PHPSESSID=lr0gvdjlqvn1eg3qes0sv78t50",
+               "Connection": "keep-alive"}
+
+    checking = requests.get('http://xvg-mg.idcray.com/index.php?page=api&action=getuserstatus&api_key=81a46d1ea65c93c6e37218ea4ae2a0c4764f6745e040ab7059dd7c08849d812b&id=9366', headers = headers).json()
+
+    if float(checking['getuserstatus']['data']['hashrate'])/(10**6) < 10:
+        send_message(ppl['Test'], 'baikal: общий хешрейт: ' + str(round(float((checking['getuserstatus']['data']['hashrate'])/(10**6)), 1)) + ' из ~21')
+       
+
+def f2pool():
+    url = 'http://api.f2pool.com/sc/0ca2e05ec67a6c1114ecfea7356077ca6677c6d3f31f0f6e47f390e4b7807a513bdf055a6219'
+    checking = requests.get(url).json()
+    messg = ''
+    hasrate = int(checking['hashrate'])/10**11
+    if hasrate < 12:
+        messg += '\nAsic A3 ' + str(round(int(hasrate), 2)) + ': из ~18 '
+        send_message(ppl['Test'], messg)
+
+
+def main():
+    try:
+        print('=========starting auto=========')
+        send_message(ppl['Test'], '=========starting auto=========')
+
+        index = 0
+        while True:
+            send_message(ppl['Test'], str(index) + ' ' + str(time.asctime()))
+
+            index += 1
+            time1 = time.time()
+
+
+            try:
+                baikal()
+            except Exception:
+                pass
+
+
+            ltc('https://www.litecoinpool.org/api?api_key=7b05082b36afc683a3916657109b7caf',
+                ['timevault.01', 'timevault.02', 'timevault.03', 'timevault.04', 'timevault.05', 'timevault.06',
+                 'timevault.07', 'timevault.08', 'timevault.09', 'timevault.10', 'timevault.11', 'timevault.12',
+                 'timevault.13', 'timevault.14', 'timevault.15', 'timevault.16', 'timevault.17', 'timevault.18',
+                 'timevault.19', 'timevault.20'])
+
+            ltc('https://www.litecoinpool.org/api?api_key=9e2313e88fa43ece987aac733d74e606',
+                ['timetwister.1', 'timetwister.2', 'timetwister.3', 'timetwister.4', 'timetwister.5', 'timetwister.6',
+                 'timetwister.7', 'timetwister.8', 'timetwister.9', 'timetwister.10', 'timetwister.11', 'timetwister.12',
+                 'timetwister.13', 'timetwister.14', 'timetwister.15', 'timetwister.16', 'timetwister.17', 'timetwister.18',
+                 'timetwister.19', 'timetwister.20', 'timetwister.21', 'timetwister.22', 'timetwister.23', 'timetwister.24',
+                 'timetwister.25', 'timetwister.26', 'timetwister.27', 'timetwister.28', 'timetwister.29', 'timetwister.30',
+                 'timetwister.31', 'timetwister.32', 'timetwister.33', 'timetwister.34', 'timetwister.35', 'timetwister.36',
+                 'timetwister.37', 'timetwister.38', 'timetwister.39', 'timetwister.40', 'timetwister.41', 'timetwister.42',
+                 'timetwister.43', 'timetwister.44', 'timetwister.45', 'timetwister.46', 'timetwister.47', 'timetwister.48',
+                 'timetwister.49'])
+
+
+            f2pool()
+
+
+            #eth1('https://api.ethermine.org/miner/0xC2F2758199a669B52c506B4bE39A35CC43Ac6c03/workers')
+
+
+            try:
+                s9('https://antpool.com/api/workers.htm?key=1a32c0beb2874c7180bcaca51898dd07&nonce=1&signature=7112284EB8BC6608F41FBDBA7E03EAF6E3E3D8ADF71DC63073538799BC8918F6&pageSize=42',
+                    ['timewalk.01', 'timewalk.02', 'timewalk.03', 'timewalk.04', 'timewalk.05', 'timewalk.06',
+                     'timewalk.07', 'timewalk.08', 'timewalk.09', 'timewalk.10', 'timewalk.11', 'timewalk.12',
+                     'timewalk.13', 'timewalk.14', 'timewalk.15', 'timewalk.16', 'timewalk.17', 'timewalk.18',
+                     'timewalk.19', 'timewalk.20', 'timewalk.21', 'timewalk.22', 'timewalk.23',
+                     'timewalk.24', 'timewalk.25', 'timewalk.26', 'timewalk.27', 'timewalk.28', 'timewalk.29',
+                     'timewalk.30', 'timewalk.31', 'timewalk.32', 'timewalk.33', 'timewalk.34',
+                     'timewalk.35', 'timewalk.36', 'timewalk.37', 'timewalk.38', 'timewalk.39', 'timewalk.40'])
+            except Exception:
+                send_message(ppl['Test'], 's9: проблема с доступом к сайту')
+                pass
+
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=53beda9ca1524c44fe4715d3cd4c1dd86ea1e8a868fc30dbb70c517dedfa5161',
+                ['ss_dgb.sS00', 'sS_dgb.ss01'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=fbb844da9ed93e515f50e7e2f1e56e25f90e57a0b9e10e705135910c0fd717ec',
+                ['kS_dgb.ks00', 'kS_dgb.ks01', 'kS_dgb.ks02'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=c5b0d50be1d2095396f6b3cf631944ffad5990d11381a037e10f939e9e6ae4e1',
+                ['timevault.m01', 'timevault.m03', 'timevault.m04', 'timevault.m06', 'timevault.m07'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=3f018686a071338e571539e521b5e28ddb9460590ebafa521068e37ae3bf5c46',
+                ['nmine.nV01', 'nmine.nV02', 'nmine.nV03', 'nmine.nV00', 'nmine.nV04', 'nmine.nV05', 'nmine.nV06', 'nmine.nV07', 'nmine.nV09'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=49bdd19d9d87f88cde8ebc52d2b6f1ff4bdd56b51e5c465543ff8b4a06e66c25',
+                ['ProMine1.1'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=aa1af3ee04ec2b17d4ce233a42f4a533ffecfb7201eab7efed08937ddd540c98',
+                ['akmine.ak01', 'akmine.ak02'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=a5b92e6516d8539833a6a228fda4bc0dce4d9c35d8e31c57a2871b0c70a1a3a2',
+                ['axmine.ax01', 'axmine.ax02', 'axmine.ax03'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=830f1b4a462667864cd1b71409be03b8e95f69de2c6d6b0986077c8dac2b5364',
+                ['timewalk.tw01', 'timewalk.tw02', 'timewalk.tw03', 'timewalk.tw04', 'timewalk.tw05', 'timewalk.tw06'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=ea6988ceec3362954c827043f2c8b7f2987c4a36fb036432e5253defbc1c7d02',
+                ['fstminer.x01'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=cad18ec26255df08e7796f0381068674370ca9984b50671ebe03f255c2a0b074',
+                ['upheaval.up01'])
+
+            dgb('https://dgb-skein.theblocksfactory.com/api.php?api_key=8a52aa2b5bb60c3e38b4425d79fadbc7d9ffd976df296ba1edf75216e9f270e1',
+                ['tinker.tn01', 'tinker.tn02', 'tinker.tn03', 'tinker.tn04', 'tinker.tn05'])
+
+
+            time2 = time.time() - time1
+            print(time2)
+            time.sleep(1800 - int(time2))
+
+    except Exception as n:
+        print(Exception)
+        print(n)
+        print('error')
+        send_message(ppl['Bogdan'], 'error')
+        time.sleep(30)
+        main()
+
+
+if __name__ == '__main__':
+    main()
