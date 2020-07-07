@@ -1,0 +1,103 @@
+import time
+import requests
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+scope = ['https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+client = gspread.authorize(creds)
+sheet = client.open('kurs').sheet1
+
+difff = 0
+sl = 0
+
+token = "1007102925:AAHtQomNBNsFKZ44-vNVQcmRf_GfMsXYdbc"
+URL = "https://api.telegram.org/bot" + token + "/"
+
+koef = 0.75     # minimal checking value
+
+ppl = {'Bogdan': **chat_id**}
+
+
+def send_message(chat_id, text):
+    url = URL + 'sendmessage?chat_id={}&text={}'.format(chat_id, text)
+    requests.get(url)
+
+
+def comp(binance, coin, name):
+    global difff
+
+    difff = int(sheet.acell('S10').value)
+    res = {'dif': 0, 'dif per': 0, 'alarm': ''}
+
+    if binance > coin:
+        dif = round(binance - coin, 2)
+        dif_per = round(100 - coin * 100 / binance, 2)
+
+        res['dif'] = dif
+        res['dif per'] = dif_per
+        if dif_per > difff:
+            res['alarm'] = name
+
+    elif coin > binance:
+        dif = round(coin - binance, 2)
+        dif_per = round(100 - binance * 100 / coin, 2)
+
+        res['dif'] = dif
+        res['dif per'] = dif_per
+        if dif_per > difff:
+            res['alarm'] = name
+
+    return res
+
+
+def main():
+    global sl
+
+    print('=========starting auto=========')
+    send_message(ppl['Bogdan'], '=========starting auto=========')
+
+    index = 0
+
+    while True:
+        try:
+            sl = int(sheet.acell('S11').value) - 2
+
+            prices = requests.get('https://api.binance.com/api/v3/ticker/24hr').json()
+            btc_binance = round(float(prices[11]['lastPrice']), 2)
+            eth_binance = round(float(prices[12]['lastPrice']), 2)
+            xrp_binance = round(float(prices[308]['lastPrice']), 2)
+
+            kurs = requests.get('https://poloniex.com/public?command=returnTicker').json()
+            btc_poloniex = round(float(kurs['USDT_BTC']['last']), 2)
+            eth_poloniex = round(float(kurs['USDT_ETH']['last']), 2)
+            xrp_poloniex = round(float(kurs['USDT_XRP']['last']), 2)
+
+            res_btc = comp(btc_binance, btc_poloniex, 'BTC')
+            res_eth = comp(eth_binance, eth_poloniex, 'ETH')
+            res_xrp = comp(xrp_binance, xrp_poloniex, 'XRP')
+
+            alarm = res_btc['alarm'] + ' ' + res_eth['alarm'] + ' ' + res_xrp['alarm']
+
+            sheet.insert_row([time.asctime(), '',
+                              btc_poloniex, btc_binance, res_btc['dif'], res_btc['dif per'], '',
+                              eth_poloniex, eth_binance, res_eth['dif'], res_eth['dif per'], '',
+                              xrp_poloniex, xrp_binance, res_xrp['dif'], res_xrp['dif per'], alarm,
+                              ],  12)
+
+            if alarm != '  ':
+                send_message(ppl['Bogdan'], 'Alarm!')
+
+            time.sleep(sl)
+            # check end
+
+        except Exception as n:
+            print(n)
+            print('Error')
+            send_message(ppl['Bogdan'], 'Error')
+            time.sleep(30)
+            main()
+
+
+if __name__ == '__main__':
+    main()
